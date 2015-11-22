@@ -47,14 +47,49 @@ class Fingerprint():
 		else:
 			raise ValueError("Javascript is not activated")
 
-	def getBrowserVersion(self):
+	def getMajorBrowserVersion(self):
 		if len(self.userAgentInfo) == 0:
 			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
+		return self.userAgentInfo["user_agent"]["major"]
 
-		return self.userAgentInfo["user_agent"]["major"] + self.userAgentInfo["user_agent"]["minor"]
+	def getMinorBrowserVersion(self):
+		if len(self.userAgentInfo) == 0:
+			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
+		return self.userAgentInfo["user_agent"]["minor"]
+
+	def getBrowser(self):
+		if len(self.userAgentInfo) == 0:
+			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
+		return self.userAgentInfo['user_agent']['family']
 
 	def getOs(self):
 		if len(self.userAgentInfo) == 0:
 			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
-
 		return self.userAgentInfo["os"]["family"]
+
+	#Compare the current fingerprint with another one (fp)
+	#Returns True if the current fingerprint has a highest (or equal) version of browser 
+	def hasHighestBrowserVersion(self, fp):
+		if self.getMajorBrowserVersion() > fp.getMajorBrowserVersion():
+			return True
+		elif self.getMinorBrowserVersion() > fp.getMinorBrowserVersion():
+			return True
+		elif self.getMajorBrowserVersion() == fp.getMajorBrowserVersion() and \
+			self.getMinorBrowserVersion() == fp.getMinorBrowserVersion():
+			return True
+
+		return False 
+
+	def getPlugins(self):
+		if self.hasJsActivated():
+			return re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", self.pluginsJs)
+		else:
+			raise ValueError("Javascript is not activated")
+
+	#Returns True if the plugins of the current fingerprint are a subset of another fingerprint fp or the opposite
+	#Else, it returns False
+	def arePluginsSubset(self, fp):
+		pluginsSet1 = set(self.getPlugins)
+		pluginsSet2 = set(fp.getPlugins)
+
+		return (pluginsSet1.issubset(pluginsSet2) or pluginsSet2.issubset(pluginsSet1))
