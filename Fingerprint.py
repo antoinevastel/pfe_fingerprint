@@ -1,3 +1,4 @@
+from ua_parser import user_agent_parser
 
 class Fingerprint():
 
@@ -25,12 +26,35 @@ class Fingerprint():
 		self.canvasJSHashed = attributes["canvasJSHashed"]
 		self.localJs = attributes["localJS"]
 		self.platformJs = attributes["platformJS"]
+		self.userAgentInfo = dict()
 
 
 	def hasJsActivated(self):
 		return self.platformJS != "no JS"
 
 	def hasFlashActivated(self):
-		return fontsFlash != "Flash detected but not activated (click-to-play)" 
+		return self.fontsFlash != "Flash detected but not activated (click-to-play)" 
 
-	
+	def getNumberFonts(self):
+		if self.hasFlashActivated():
+			return len(self.fontsFlash.split("_"))
+		else:
+			raise ValueError("Flash is not activated")
+
+	def getNumberOfPlugins(self):
+		if self.hasJsActivated():
+			return len(re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", self.pluginsJs))
+		else:
+			raise ValueError("Javascript is not activated")
+
+	def getBrowserVersion(self):
+		if len(self.userAgentInfo) == 0:
+			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
+
+		return self.userAgentInfo["user_agent"]["major"] + self.userAgentInfo["user_agent"]["minor"]
+
+	def getOs(self):
+		if len(self.userAgentInfo) == 0:
+			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
+
+		return self.userAgentInfo["os"]["family"]
