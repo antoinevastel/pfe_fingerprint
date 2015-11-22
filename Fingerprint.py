@@ -1,4 +1,5 @@
 from ua_parser import user_agent_parser
+import re
 
 class Fingerprint():
 
@@ -30,16 +31,28 @@ class Fingerprint():
 
 
 	def hasJsActivated(self):
-		return self.platformJS != "no JS"
+		return self.platformJs != "no JS"
 
 	def hasFlashActivated(self):
 		return self.fontsFlash != "Flash detected but not activated (click-to-play)" 
+
+	def getFonts(self):
+		if self.hasFlashActivated():
+			return self.fontsFlash.split("_")
+		else:
+			raise ValueError("Flash is not activated")
 
 	def getNumberFonts(self):
 		if self.hasFlashActivated():
 			return len(self.fontsFlash.split("_"))
 		else:
 			raise ValueError("Flash is not activated")
+
+	def getPlugins(self):
+		if self.hasJsActivated():
+			return re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", self.pluginsJs)
+		else:
+			raise ValueError("Javascript is not activated")
 
 	def getNumberOfPlugins(self):
 		if self.hasJsActivated():
@@ -67,6 +80,18 @@ class Fingerprint():
 			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
 		return self.userAgentInfo["os"]["family"]
 
+	##########
+
+	#Methods to compare 2 Fingerprints :
+
+	##########
+
+	def hasSameOs(self, fp):
+		return self.getOs() == fp.getOs()
+
+	def hasSameBrowser(self, fp):
+		return self.getBrowser() == fp.getBrowser
+
 	#Compare the current fingerprint with another one (fp)
 	#Returns True if the current fingerprint has a highest (or equal) version of browser 
 	def hasHighestBrowserVersion(self, fp):
@@ -80,16 +105,21 @@ class Fingerprint():
 
 		return False 
 
-	def getPlugins(self):
-		if self.hasJsActivated():
-			return re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", self.pluginsJs)
-		else:
-			raise ValueError("Javascript is not activated")
-
 	#Returns True if the plugins of the current fingerprint are a subset of another fingerprint fp or the opposite
 	#Else, it returns False
 	def arePluginsSubset(self, fp):
-		pluginsSet1 = set(self.getPlugins)
-		pluginsSet2 = set(fp.getPlugins)
-
+		pluginsSet1 = set(self.getPlugins())
+		pluginsSet2 = set(fp.getPlugins())
 		return (pluginsSet1.issubset(pluginsSet2) or pluginsSet2.issubset(pluginsSet1))
+
+	def getNumberDifferentPlugins(self, fp):
+		pluginsSet1 = set(self.getPlugins())
+		pluginsSet2 = set(fp.getPlugins())
+		return max(self.getNumberOfPlugins(), fp.getNumberOfPlugins()) - len(pluginsSet1.intersection(pluginsSet2))
+
+	#Returns True if the fonts of the current fingerprint are a subset of another fingerprint fp or the opposite
+	#Else, it returns False
+	def areFontsSubset(self, fp):
+		fontsSet1 = set(self.getFonts())
+		fontsSet2 = set(fp.getFonts())
+		return (fontsSet1.issubset(fontsSet2) or fontsSet2.issubset(fontsSet1))
