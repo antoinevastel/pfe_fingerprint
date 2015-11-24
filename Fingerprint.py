@@ -123,3 +123,13 @@ class Fingerprint():
 		fontsSet1 = set(self.getFonts())
 		fontsSet2 = set(fp.getFonts())
 		return (fontsSet1.issubset(fontsSet2) or fontsSet2.issubset(fontsSet1))
+
+	#We compare the current fingerprint with another one (fp)
+	#The goal is to determine if the current fp and the other belongs to the same user
+	#Constraint : fp most be older than the current fp
+	def belongsToSameUser(self, fp):
+		#first we start by looking if the version is greater or equal
+		if not self.hasHighestBrowserVersion(fp):
+			return False
+
+		
