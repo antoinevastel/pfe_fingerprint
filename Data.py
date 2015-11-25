@@ -2,6 +2,7 @@ import MySQLdb as mdb
 import csv
 import random
 from sklearn.cross_validation import train_test_split
+from Fingerprint import Fingerprint
 
 class Data():
 	def __init__(self, computeSamples = False, seed = 42):
@@ -84,7 +85,13 @@ class Data():
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
 		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
-		return self.cur.fetchall()
+		res = self.cur.fetchall()
+
+		trainSet = list()
+		for v in res:
+			trainSet.append(Fingerprint(v))
+
+		return trainSet
 
 	def getTestSample(self):
 		if len(self.test) == 0:
@@ -97,7 +104,12 @@ class Data():
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
 		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
-		return self.cur.fetchall()
+		res =  self.cur.fetchall()
 		
+		testSet = list()
+		for v in res:
+			testSet.append(Fingerprint(v))
+
+		return testSet
 
 

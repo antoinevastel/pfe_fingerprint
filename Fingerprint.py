@@ -4,6 +4,7 @@ import re
 class Fingerprint():
 
 	def __init__(self, attributes):
+		self.id = attributes["id"]
 		self.counter = attributes["counter"]
 		self.acceptHttp = attributes["acceptHttp"]
 		self.cookiesJs = attributes["cookiesJS"]
@@ -93,15 +94,34 @@ class Fingerprint():
 	def hasSameBrowser(self, fp):
 		return self.getBrowser() == fp.getBrowser
 
+	def hasSameTimezone(self, fp):
+		return self.timezoneJs == fp.timezoneJs
+
+	def hasSameResolution(self, fp):
+		return self.resolutionJs == fp.resolutionJs
+
+	def hasSameAdblock(self, fp):
+		return self.adBlock == fp.adBlock
+
+	def hasSameHttpLanguages(self, fp):
+		return self.languageHttp == fp.languageHttp
+
 	#Compare the current fingerprint with another one (fp)
 	#Returns True if the current fingerprint has a highest (or equal) version of browser 
 	def hasHighestBrowserVersion(self, fp):
-		if self.getMajorBrowserVersion() > fp.getMajorBrowserVersion():
+		if self.counter > fp.counter:
+			mostRecent = self
+			oldest = fp
+		else:
+			mostRecent = fp
+			oldest = self
+
+		if mostRecent.getMajorBrowserVersion() > oldest.getMajorBrowserVersion():
 			return True
-		elif self.getMinorBrowserVersion() > fp.getMinorBrowserVersion():
+		elif mostRecent.getMinorBrowserVersion() > oldest.getMinorBrowserVersion():
 			return True
-		elif self.getMajorBrowserVersion() == fp.getMajorBrowserVersion() and \
-			self.getMinorBrowserVersion() == fp.getMinorBrowserVersion():
+		elif oldest.getMajorBrowserVersion() == mostRecent.getMajorBrowserVersion() and \
+			oldest.getMinorBrowserVersion() == mostRecent.getMinorBrowserVersion():
 			return True
 
 		return False 
@@ -125,12 +145,7 @@ class Fingerprint():
 		fontsSet2 = set(fp.getFonts())
 		return (fontsSet1.issubset(fontsSet2) or fontsSet2.issubset(fontsSet1))
 
-	#We compare the current fingerprint with another one (fp)
-	#The goal is to determine if the current fp and the other belongs to the same user
-	#Constraint : fp most be older than the current fp
-	def belongsToSameUser(self, fp):
-		#first we start by looking if the version is greater or equal
-		if not self.hasHighestBrowserVersion(fp):
-			return False
-
+	#return True if 2 fingeprints belong to the same user (based on the id criteria)
+	def belongToSameUser(self, fp):
+		return self.id == fp.id
 		
