@@ -19,10 +19,11 @@ def main():
 	# print "Plugins fp1 : ", fp1.getNumberOfPlugins()
 	# print "Plugins fp2 : ", fp2.getNumberOfPlugins()
 	# print "Number different plugins : ", fp1.getNumberDifferentPlugins(fp2)
-	d = Data()
-	train, test = d.splitData(computeSamples = False)
-	print len(train), len(test)
-
+	d = Data(computeSamples = False)
+	trainIndices, testIndices = d.splitData()
+	print "Getting train set ..."
+	trainSet = d.getTrainSample()
+	print len(trainSet)
 
 if __name__ == "__main__":
     main()

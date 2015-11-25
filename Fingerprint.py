@@ -4,6 +4,7 @@ import re
 class Fingerprint():
 
 	def __init__(self, attributes):
+		self.counter = attributes["counter"]
 		self.acceptHttp = attributes["acceptHttp"]
 		self.cookiesJs = attributes["cookiesJS"]
 		self.languageHttp = attributes["languageHttp"]
