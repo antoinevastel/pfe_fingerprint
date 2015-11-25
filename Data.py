@@ -85,6 +85,19 @@ class Data():
 		counterString += ")"
 		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
 		return self.cur.fetchall()
+
+	def getTestSample(self):
+		if len(self.test) == 0:
+			self.splitData()
+
+		counterString = "("
+		for counter in self.test:
+			counterString += str(counter)+","
+
+		counterString = counterString[0: len(counterString)-1]
+		counterString += ")"
+		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
+		return self.cur.fetchall()
 		
 
 
