@@ -36,7 +36,7 @@ class Fingerprint():
 		return self.platformJs != "no JS"
 
 	def hasFlashActivated(self):
-		return self.fontsFlash != "Flash detected but not activated (click-to-play)" 
+		return (self.fontsFlash != "Flash detected but not activated (click-to-play)" and self.fontsFlash != "Flash not detected")
 
 	def getFonts(self):
 		if self.hasFlashActivated():

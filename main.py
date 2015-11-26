@@ -9,6 +9,7 @@ def main():
 	d = Data(computeSamples = False)
 	trainIndices, testIndices = d.splitData()
 	algo = Algorithm(d.getTrainSample(), d.getTestSample())
+	dicRes = algo.trainAlgoV1()
 
 
 if __name__ == "__main__":
