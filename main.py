@@ -9,7 +9,10 @@ def main():
 	d = Data(computeSamples = False)
 	trainIndices, testIndices = d.splitData()
 	algo = Algorithm(d.getTrainSample(), d.getTestSample())
-	dicRes = algo.trainAlgoV1()
+	# algo.trainV1()
+	# algo.predict()
+	# algo.writeSubmission()
+	print algo.evalPrecision()
 
 
 if __name__ == "__main__":
