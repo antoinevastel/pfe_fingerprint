@@ -23,9 +23,9 @@ class Data():
 
 			idString = "("
 			for ids in multId:
-				idString += str(ids["id"])+","
-			counterString = counterString[0: len(counterString)-1]
-			counterString += ")"
+				idString += "\""+ids["id"]+"\","
+			idString = idString[0: len(idString)-1]
+			idString += ")"
 
 			self.cur.execute('SELECT counter from fpData WHERE id in '+idString)
 			counters = self.cur.fetchall()
@@ -33,7 +33,7 @@ class Data():
 				total.append(counter["counter"])
 
 			#we keep 20% of these counters for the test, the others go in the train
-			train, test = train_test_split(total, train_size = 0.8)
+			train, test = train_test_split(total, train_size = 0.9)
 			#we get users with only 1 fingerprint
 			self.cur.execute('SELECT counter, id , count(*) AS nbFps FROM fpData where id != "Not supported" GROUP BY id HAVING count(id) = 1')
 			singleFps = set()
@@ -45,7 +45,7 @@ class Data():
 				cpt += 1
 				singleFps.add(ids["counter"])
 
-			singleFpsSelected = random.sample(singleFps, len(test))
+			singleFpsSelected = random.sample(singleFps, 500)
 			test = test + singleFpsSelected
 
 

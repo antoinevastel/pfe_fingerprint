@@ -26,7 +26,7 @@ class Fingerprint():
 		self.resolutionFlash = attributes["resolutionFlash"]
 		self.IEDataJs = attributes["IEDataJS"]
 		self.hostHttp = attributes["hostHttp"]
-		self.canvasJSHashed = attributes["canvasJSHashed"]
+		self.canvasJsHashed = attributes["canvasJSHashed"]
 		self.localJs = attributes["localJS"]
 		self.platformJs = attributes["platformJS"]
 		self.userAgentInfo = dict()
@@ -105,6 +105,33 @@ class Fingerprint():
 
 	def hasSameHttpLanguages(self, fp):
 		return self.languageHttp == fp.languageHttp
+
+	def hasSameAcceptHttp(self, fp):
+		return self.acceptHttp == fp.acceptHttp
+
+	def hasSameEncodingHttp(self, fp):
+		return self.encodingHttp == fp.encodingHttp
+
+	def hasSamePlugins(self, fp):
+		return self.pluginsJs == fp.pluginsJs
+
+	def hasSameFonts(self, fp):
+		return self.fontsFlash == fp.fontsFlash
+
+	def hasSamePlatformFlash(self, fp):
+		return self.platformFlash == fp.platformFlash
+
+	def hasSameResolutionFlash(self, fp):
+		return self.resolutionFlash == fp.resolutionFlash
+
+	def hasSameCanvasJsHashed(self, fp):
+		return self.canvasJsHashed == fp.canvasJsHashed
+
+	def hasSamePlatformJs(self, fp):
+		return self.platformJs == fp.platformJs
+
+	def hasSameAddressHttp(self, fp):
+		return self.addressHttp == fp.addressHttp
 
 	#Compare the current fingerprint with another one (fp)
 	#Returns True if the current fingerprint has a highest (or equal) version of browser 
