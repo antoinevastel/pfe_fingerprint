@@ -30,13 +30,17 @@ class Fingerprint():
 		self.localJs = attributes["localJS"]
 		self.platformJs = attributes["platformJS"]
 		self.userAgentInfo = dict()
+		if self.hasFlashActivated():
+			self.languageInconsistency = self._hasLanguageInconsistency()
+		if self.hasJsActivated():
+			self.platformInconsistency = self._hasPlatformInconsistency()
 
 
 	def hasJsActivated(self):
 		return self.platformJs != "no JS"
 
 	def hasFlashActivated(self):
-		return (self.fontsFlash != "Flash detected but not activated (click-to-play)" and self.fontsFlash != "Flash not detected")
+		return (self.fontsFlash != "Flash detected but not activated (click-to-play)" and self.fontsFlash != "Flash not detected" and self.fontsFlash !="Flash detected but blocked by an extension")
 
 	def getFonts(self):
 		if self.hasFlashActivated():
@@ -81,6 +85,35 @@ class Fingerprint():
 		if len(self.userAgentInfo) == 0:
 			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
 		return self.userAgentInfo["os"]["family"]
+
+	def _hasLanguageInconsistency(self):
+		if self.hasFlashActivated():
+			try:
+				langHttp = self.languageHttp[0:2].lower()
+				langFlash = self.languageFlash[0:2].lower()
+				return not(langHttp == langFlash)
+			except:
+				return True
+		else:
+			raise ValueError("Flash is not activated")
+
+	def _hasPlatformInconsistency(self):
+		if self.hasJsActivated():
+			try:
+				platUa = self.getOs()[0:3].lower()
+				if self.hasFlashActivated():
+					platFlash = self.platformFlash[0:3].lower()
+					return not(platUa == platFlash)
+				else:
+					platJs = self.platformJs[0:3].lower()
+					return not(platUa == platJs)
+			except:
+				return True
+		else:
+			raise ValueError("Javascript is not activated")
+
+	def hasFlashBlockedByExtension(self):
+		return self.platformFlash == "Flash detected but blocked by an extension"
 
 	##########
 
@@ -132,6 +165,34 @@ class Fingerprint():
 
 	def hasSameAddressHttp(self, fp):
 		return self.addressHttp == fp.addressHttp
+
+	def hasSameDnt(self, fp):
+		return self.dntJs == fp.dntJs
+
+	def hasSameCookie(self, fp):
+		return self.cookiesJs == fp.cookiesJs
+
+	def hasSameLocal(self, fp):
+		return self.localJs == fp.localJs
+
+	def hasSameFlashBlocked(self, fp):
+		return self.hasFlashBlockedByExtension() == fp.hasFlashBlockedByExtension()
+
+	def hasSameLanguageInconsistency(self, fp):
+		if self.languageInconsistency and fp.languageInconsistency:
+			return "0"
+		elif self.languageInconsistency or fp.languageInconsistency:
+			return "1"
+		else:
+			return "2"
+
+	def hasSamePlatformInconsistency(self, fp):
+		if self.platformInconsistency and fp.platformInconsistency:
+			return "0"
+		elif self.platformInconsistency or fp.platformInconsistency:
+			return "1"
+		else:
+			return "2"
 
 	#Compare the current fingerprint with another one (fp)
 	#Returns True if the current fingerprint has a highest (or equal) version of browser 

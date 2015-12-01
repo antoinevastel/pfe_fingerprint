@@ -11,8 +11,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
+from sklearn.ensemble import RandomForestClassifier
 
-
+# todo : add detection of inconsistencies on the language (languageHttp and languageFlash)
+# platform flash et platform js (les 3 premieres lettres de l'un doivent etre egales aux 3 premieres de l'autre) et p-e egalement celles de ua parser
+# tout mettre en lower case pour comparer
+#detecter si flash est bloque par une extension ("Flash detected but blocked by an extension")
 class Algorithm():
 
 	def __init__(self, trainSet, testSet):
@@ -67,7 +71,7 @@ class Algorithm():
 		#Javascript attributes
 		#If one or more of the two fingerprints doesn't have javascript activated
 		if not(fpFixed.hasJsActivated()) or not(fpCompared.hasJsActivated()):
-			result += "2,2,2,2,2,2,2,"
+			result += "2,2,2,2,2,2,2,2,2,2,3,"
 		else:
 			#We test if they have the same timezone
 			if fpFixed.hasSameTimezone(fpCompared):
@@ -107,11 +111,35 @@ class Algorithm():
 			else:
 				result += "1,"
 
+			if fpFixed.hasSameDnt(fpCompared):
+				result += "0,"
+			else:
+				result += "1,"
+
+			if fpFixed.hasSameCookie(fpCompared):
+				result += "0,"
+			else:
+				result += "1,"
+
+			if fpFixed.hasSameLocal(fpCompared):
+				result += "0,"
+			else:
+				result += "1,"
+
+			result += fpFixed.hasSamePlatformInconsistency(fpCompared)+","
+
 		#Flash attributes
 		#If one or more of the two fingerprints doesn't have flash activated
 		if not(fpFixed.hasFlashActivated()) or not(fpCompared.hasFlashActivated()):
-			result += "2,2,2,2"
+			if fpFixed.hasSameFlashBlocked(fpCompared):
+				result += "0,"
+			else:
+				result +="1,"
+
+			result += "2,2,2,2,3"
 		else:
+			result += "2," #For the test hasSameFlashBlocked 
+
 			#We test if the list of fonts of one of the fingerprint is the subset of the list
 			#of fonts of the other fingerprint
 			if fpFixed.areFontsSubset(fpCompared):
@@ -130,9 +158,11 @@ class Algorithm():
 				result += "1,"
 
 			if fpFixed.hasSameResolutionFlash(fpCompared):
-				result += "0"
+				result += "0,"
 			else:
-				result += "1"
+				result += "1,"
+
+			result += fpFixed.hasSameLanguageInconsistency(fpCompared)
 
 		return result
 
@@ -143,7 +173,7 @@ class Algorithm():
 
 		#We compare every fingerprints with all the other except itself
 		f = open("/home/avastel/prog/pfe/data/regInput.csv", 'w')
-		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,platformInconsistency,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash,languageInconsistency\n")
 		for i in range(len(self.trainSet)):
 			if i % 500 == 0:
 				print i
@@ -157,7 +187,8 @@ class Algorithm():
 		for i in range(len(self.trainSet)):
 			if i % 500 ==0:
 				print i
-			compareWith = random.randint(350, 450)
+			# compareWith = random.randint(250, 350)
+			compareWith = random.randint(50, 100)
 			fpFixed = self.trainSet[i]
 			for j in range(i+1, len(self.trainSet)):
 				fpCompared = self.trainSet[j]
@@ -170,9 +201,10 @@ class Algorithm():
 	def predict(self):
 		print "Start Predict"
 		df = pd.read_csv("./data/regInput.csv")
-		y, X = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp+ timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + fontsSubset + fonts + platformFlash + resolutionFlash ', df, return_type="dataframe")
+		y, X = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp+ timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + platformInconsistency + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash + languageInconsistency', df, return_type="dataframe")
 		y = np.ravel(y)
 		model = LogisticRegression()
+		#model = RandomForestClassifier(n_estimators = 10,n_jobs=3)
 		model = model.fit(X, y)
 
 		cpt = 0
@@ -180,19 +212,26 @@ class Algorithm():
 			print cpt
 			cpt += 1
 			f = open("/home/avastel/prog/pfe/data/regInputPred.csv", 'w')
-			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,platformInconsistency,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash,languageInconsistency\n")
 			for fpTrain in self.trainSet:
 				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
 				f.write(resultComparaison+"\n")
 			
 			f.close()
 			dfPredict = pd.read_csv("./data/regInputPred.csv")
-			yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + fontsSubset + fonts + platformFlash + resolutionFlash', dfPredict, return_type="dataframe")
+			yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp+ timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + platformInconsistency + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash + languageInconsistency', dfPredict, return_type="dataframe")
 			predicted = model.predict_proba(Xp)
 
 			nearest = (-predicted[:, 0]).argsort()[:30]
-			if predicted[nearest[0],0] > 0.95:
-				self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			if predicted[nearest[0],0] > 0.975:
+				found = False
+				for i in range(0,5):
+					if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
+						found = True
+						self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
+				
+				if not(found):
+					self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
 			else:
 				self.predictions[fpTest.counter] = None
 
@@ -218,12 +257,20 @@ class Algorithm():
 				self.predictions[int(row[0])] = row[1]
 
 		precision = 0.0
+		noneError = 0.0
+		badIdError = 0.0
 		for fpTest in self.testSet:
 			if self.predictions[fpTest.counter] == fpTest.id:
 				precision += 1.0
 			elif self.predictions[fpTest.counter] == "None" and fpTest.id not in idsTrain:
 				precision += 1.0
+			elif self.predictions[fpTest.counter] == "None" and fpTest.id in idsTrain:
+				noneError += 1.0
+			elif self.predictions[fpTest.counter] != fpTest.id:
+				badIdError += 1.0
 
+		print "noneError : ",noneError/float(len(self.testSet))
+		print "badIdError : ",badIdError/float(len(self.testSet))
 		return precision / float(len(self.testSet))
 
 

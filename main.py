@@ -4,12 +4,10 @@ from Data import Data
 from Algorithm import Algorithm
 
 def main():
-	# con = mdb.connect('localhost', 'root', 'bdd', 'fp');
-	# cur = con.cursor(mdb.cursors.DictCursor)
 	d = Data(computeSamples = False)
 	trainIndices, testIndices = d.splitData()
 	algo = Algorithm(d.getTrainSample(), d.getTestSample())
-	# algo.computeRegressionInput()
+	algo.computeRegressionInput()
 	algo.predict()
 	algo.writeSubmission()
 	print algo.evalPrecision()

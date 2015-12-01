@@ -33,7 +33,7 @@ class Data():
 				total.append(counter["counter"])
 
 			#we keep 20% of these counters for the test, the others go in the train
-			train, test = train_test_split(total, train_size = 0.9)
+			train, test = train_test_split(total, train_size = 0.95)
 			#we get users with only 1 fingerprint
 			self.cur.execute('SELECT counter, id , count(*) AS nbFps FROM fpData where id != "Not supported" GROUP BY id HAVING count(id) = 1')
 			singleFps = set()
@@ -45,7 +45,7 @@ class Data():
 				cpt += 1
 				singleFps.add(ids["counter"])
 
-			singleFpsSelected = random.sample(singleFps, 500)
+			singleFpsSelected = random.sample(singleFps, 250)
 			test = test + singleFpsSelected
 
 
