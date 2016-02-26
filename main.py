@@ -7,10 +7,10 @@ def main():
 	d = Data(computeSamples = False)
 	trainIndices, testIndices = d.splitData()
 	algo = Algorithm(d.getTrainSample(), d.getTestSample())
-	algo.computeRegressionInput()
-	algo.predict()
-	algo.writeSubmission()
-	print algo.evalPrecision()
+	#algo.computeRegressionInput()
+	algo.predictNN()
+	# algo.writeSubmission()
+	# print algo.evalPrecision()
 
 
 if __name__ == "__main__":

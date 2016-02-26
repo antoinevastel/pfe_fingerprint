@@ -8,7 +8,7 @@ class Data():
 	def __init__(self, computeSamples = False, seed = 42):
 		self.seed = seed
 		random.seed(seed)
-		self.con = mdb.connect('localhost', 'root', 'bdd', 'fp');
+		self.con = mdb.connect('localhost', 'root', 'bdd', 'fingerprint');
 		self.cur = self.con.cursor(mdb.cursors.DictCursor)
 		self.train = list()
 		self.test = list()
@@ -84,7 +84,7 @@ class Data():
 
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
-		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
+		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed, nbPlugins, nbFonts, os, browser, browserVersion FROM fpData WHERE counter in '+counterString)
 		res = self.cur.fetchall()
 
 		trainSet = list()
@@ -103,7 +103,7 @@ class Data():
 
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
-		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
+		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed, nbPlugins, nbFonts, os, browser, browserVersion FROM fpData WHERE counter in '+counterString)
 		res =  self.cur.fetchall()
 		
 		testSet = list()

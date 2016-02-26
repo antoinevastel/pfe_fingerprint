@@ -12,11 +12,12 @@ from sklearn.cross_validation import train_test_split
 from sklearn import metrics
 from sklearn.cross_validation import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
+from pybrain.tools.shortcuts import buildNetwork
+from pybrain.structure import TanhLayer
+from pybrain.structure import SoftmaxLayer
+from pybrain.datasets import SupervisedDataSet
+from pybrain.supervised.trainers import BackpropTrainer
 
-# todo : add detection of inconsistencies on the language (languageHttp and languageFlash)
-# platform flash et platform js (les 3 premieres lettres de l'un doivent etre egales aux 3 premieres de l'autre) et p-e egalement celles de ua parser
-# tout mettre en lower case pour comparer
-#detecter si flash est bloque par une extension ("Flash detected but blocked by an extension")
 class Algorithm():
 
 	def __init__(self, trainSet, testSet):
@@ -71,7 +72,7 @@ class Algorithm():
 		#Javascript attributes
 		#If one or more of the two fingerprints doesn't have javascript activated
 		if not(fpFixed.hasJsActivated()) or not(fpCompared.hasJsActivated()):
-			result += "2,2,2,2,2,2,2,2,2,2,3,"
+			result += "2,2,2,2,2,2,2,2,2,2,"
 		else:
 			#We test if they have the same timezone
 			if fpFixed.hasSameTimezone(fpCompared):
@@ -126,7 +127,6 @@ class Algorithm():
 			else:
 				result += "1,"
 
-			result += fpFixed.hasSamePlatformInconsistency(fpCompared)+","
 
 		#Flash attributes
 		#If one or more of the two fingerprints doesn't have flash activated
@@ -136,7 +136,7 @@ class Algorithm():
 			else:
 				result +="1,"
 
-			result += "2,2,2,2,3"
+			result += "2,2,2,2"
 		else:
 			result += "2," #For the test hasSameFlashBlocked 
 
@@ -158,11 +158,9 @@ class Algorithm():
 				result += "1,"
 
 			if fpFixed.hasSameResolutionFlash(fpCompared):
-				result += "0,"
+				result += "0"
 			else:
-				result += "1,"
-
-			result += fpFixed.hasSameLanguageInconsistency(fpCompared)
+				result += "1"
 
 		return result
 
@@ -173,7 +171,7 @@ class Algorithm():
 
 		#We compare every fingerprints with all the other except itself
 		f = open("/home/avastel/prog/pfe/data/regInput.csv", 'w')
-		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,platformInconsistency,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash,languageInconsistency\n")
+		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
 		for i in range(len(self.trainSet)):
 			if i % 500 == 0:
 				print i
@@ -201,10 +199,10 @@ class Algorithm():
 	def predict(self):
 		print "Start Predict"
 		df = pd.read_csv("./data/regInput.csv")
-		y, X = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp+ timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + platformInconsistency + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash + languageInconsistency', df, return_type="dataframe")
+		y, X = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash ', df, return_type="dataframe")
 		y = np.ravel(y)
 		model = LogisticRegression()
-		#model = RandomForestClassifier(n_estimators = 10,n_jobs=3)
+		# model = RandomForestClassifier(n_estimators = 11,n_jobs=3)
 		model = model.fit(X, y)
 
 		cpt = 0
@@ -212,31 +210,111 @@ class Algorithm():
 			print cpt
 			cpt += 1
 			f = open("/home/avastel/prog/pfe/data/regInputPred.csv", 'w')
-			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,platformInconsistency,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash,languageInconsistency\n")
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
 			for fpTrain in self.trainSet:
 				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
 				f.write(resultComparaison+"\n")
 			
 			f.close()
 			dfPredict = pd.read_csv("./data/regInputPred.csv")
-			yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + addressHttp+ timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + platformInconsistency + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash + languageInconsistency', dfPredict, return_type="dataframe")
+			yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash', dfPredict, return_type="dataframe")
 			predicted = model.predict_proba(Xp)
 
 			nearest = (-predicted[:, 0]).argsort()[:30]
-			if predicted[nearest[0],0] > 0.975:
-				found = False
-				for i in range(0,5):
-					if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
-						found = True
-						self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
+			# if predicted[nearest[0],0] > 0.975:
+			# 	found = False
+			# 	for i in range(0,5):
+			# 		if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
+			# 			found = True
+			# 			self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
 				
-				if not(found):
-					self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			# 	if not(found):
+			# 		self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			# else:
+			# 	self.predictions[fpTest.counter] = None
+
+			if predicted[nearest[0],0] > 0.93:
+				self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
 			else:
 				self.predictions[fpTest.counter] = None
 
 			res = fpTest.id == self.trainSet[nearest[0]].id
 			print "Prediction : ",fpTest.counter," ,",self.predictions[fpTest.counter], ", ", res
+
+	def predictNN(self):
+		print "Start Predict"
+		ds = SupervisedDataSet(22, 1)
+		tf = open('./data/regInput.csv','r')
+		tf.readline()
+		for line in tf.readlines():
+		    data = [int(x) for x in line.strip().split(',') if x != '']
+		    indata =  tuple(data[1:])
+		    outdata = tuple(data[:1])
+		    ds.addSample(indata,outdata)
+
+		tf.close()
+
+
+		nn = buildNetwork(22, 10, 1, hiddenclass=TanhLayer, outclass=SoftmaxLayer)
+		trainer = BackpropTrainer(nn, ds)
+		print "Start training NN"
+		trainer.trainUntilConvergence()
+		print "Finished training NN"
+
+		cpt = 0
+		for fpTest in self.testSet:
+			print cpt
+			cpt += 1
+			f = open("/home/avastel/prog/pfe/data/regInputPred.csv", 'w')
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+			for fpTrain in self.trainSet:
+				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
+				f.write(resultComparaison+"\n")
+			
+			f.close()
+
+			probaMax = 0.0
+			indMax = 0
+			cpt = 1
+			tf = open('./data/regInputPred.csv','r')
+			for line in tf.readlines():
+			    data = [int(x) for x in line.strip().split(',') if x != '']
+			    indata =  tuple(data[1:])
+			    outdata = tuple(data[:1])
+			    pred = nn.activate(indata)
+			    if pred > probaMax:
+			    	probaMax = pred
+			    	indMax = cpt
+
+			    cpt += 1
+
+			tf.close()
+
+			# dfPredict = pd.read_csv("./data/regInputPred.csv")
+			# yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash', dfPredict, return_type="dataframe")
+			# predicted = model.predict_proba(Xp)
+
+			# nearest = (-predicted[:, 0]).argsort()[:30]
+			# if predicted[nearest[0],0] > 0.975:
+			# 	found = False
+			# 	for i in range(0,5):
+			# 		if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
+			# 			found = True
+			# 			self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
+				
+			# 	if not(found):
+			# 		self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			# else:
+			# 	self.predictions[fpTest.counter] = None
+
+			# if predicted[nearest[0],0] > 0.93:
+			# 	self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			# else:
+			# 	self.predictions[fpTest.counter] = None
+
+			# res = fpTest.id == self.trainSet[nearest[0]].id
+			# print "Prediction : ",fpTest.counter," ,",self.predictions[fpTest.counter], ", ", res
+			print indMax, " ", probaMax
 
 	def writeSubmission(self):
 		if len(self.predictions) == 0:

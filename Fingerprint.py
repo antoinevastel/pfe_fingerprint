@@ -29,6 +29,12 @@ class Fingerprint():
 		self.canvasJsHashed = attributes["canvasJSHashed"]
 		self.localJs = attributes["localJS"]
 		self.platformJs = attributes["platformJS"]
+		self.nbPlugins = attributes["nbPlugins"]
+		self.nbFonts = attributes["nbFonts"]
+		self.os = attributes["os"]
+		self.browser = attributes["browser"]
+		self.browserVersion = attributes["browserVersion"]
+
 		self.userAgentInfo = dict()
 		if self.hasFlashActivated():
 			self.languageInconsistency = self._hasLanguageInconsistency()
@@ -61,30 +67,13 @@ class Fingerprint():
 			raise ValueError("Javascript is not activated")
 
 	def getNumberOfPlugins(self):
-		if self.hasJsActivated():
-			return len(re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", self.pluginsJs))
-		else:
-			raise ValueError("Javascript is not activated")
-
-	def getMajorBrowserVersion(self):
-		if len(self.userAgentInfo) == 0:
-			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
-		return self.userAgentInfo["user_agent"]["major"]
-
-	def getMinorBrowserVersion(self):
-		if len(self.userAgentInfo) == 0:
-			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
-		return self.userAgentInfo["user_agent"]["minor"]
+		return self.nbPlugins
 
 	def getBrowser(self):
-		if len(self.userAgentInfo) == 0:
-			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
-		return self.userAgentInfo['user_agent']['family']
+		return self.browser
 
 	def getOs(self):
-		if len(self.userAgentInfo) == 0:
-			self.userAgentInfo = user_agent_parser.Parse(self.userAgentHttp)
-		return self.userAgentInfo["os"]["family"]
+		return self.os
 
 	def _hasLanguageInconsistency(self):
 		if self.hasFlashActivated():
@@ -125,7 +114,7 @@ class Fingerprint():
 		return self.getOs() == fp.getOs()
 
 	def hasSameBrowser(self, fp):
-		return self.getBrowser() == fp.getBrowser
+		return self.getBrowser() == fp.getBrowser()
 
 	def hasSameTimezone(self, fp):
 		return self.timezoneJs == fp.timezoneJs
@@ -204,15 +193,8 @@ class Fingerprint():
 			mostRecent = fp
 			oldest = self
 
-		if mostRecent.getMajorBrowserVersion() > oldest.getMajorBrowserVersion():
-			return True
-		elif mostRecent.getMinorBrowserVersion() > oldest.getMinorBrowserVersion():
-			return True
-		elif oldest.getMajorBrowserVersion() == mostRecent.getMajorBrowserVersion() and \
-			oldest.getMinorBrowserVersion() == mostRecent.getMinorBrowserVersion():
-			return True
-
-		return False 
+		return mostRecent.browserVersion >= oldest.browserVersion
+ 
 
 	#Returns True if the plugins of the current fingerprint are a subset of another fingerprint fp or the opposite
 	#Else, it returns False
