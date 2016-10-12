@@ -8,7 +8,7 @@ class Data():
 	def __init__(self, computeSamples = False, seed = 42):
 		self.seed = seed
 		random.seed(seed)
-		self.con = mdb.connect('localhost', 'root', 'bdd', 'fingerprint');
+		self.con = mdb.connect('localhost', 'root', 'bdd', 'fpdata')
 		self.cur = self.con.cursor(mdb.cursors.DictCursor)
 		self.train = list()
 		self.test = list()
@@ -35,13 +35,13 @@ class Data():
 			#we keep 20% of these counters for the test, the others go in the train
 			train, test = train_test_split(total, train_size = 0.95)
 			#we get users with only 1 fingerprint
-			self.cur.execute('SELECT counter, id , count(*) AS nbFps FROM fpData where id != "Not supported" GROUP BY id HAVING count(id) = 1')
+			self.cur.execute('SELECT counter, id , count(*) AS nbFps FROM fpData where id != "Not supported" GROUP BY id, counter HAVING count(id) = 1')
 			singleFps = set()
 			singId = self.cur.fetchall()
 			cpt = 0
 			for ids in singId:
 				if cpt % 100 == 0:
-					print cpt
+					print(cpt)
 				cpt += 1
 				singleFps.add(ids["counter"])
 
@@ -49,22 +49,22 @@ class Data():
 			test = test + singleFpsSelected
 
 
-			f = open("/home/avastel/prog/pfe/train.csv", 'w')
+			f = open("./samples/train.csv", 'w')
 			for counter in train:
 				f.write(str(counter)+"\n")
 
-			f = open("/home/avastel/prog/pfe/test.csv", 'w')
+			f = open("./samples/test.csv", 'w')
 			for counter in test:
 				f.write(str(counter)+"\n")
 		else:
 			train = list()
 			test = list()
-			with open("/home/avastel/prog/pfe/train.csv", 'rb') as trainFile:
+			with open("./samples/train.csv", 'r') as trainFile:
 				trainReader = csv.reader(trainFile, delimiter=',')
 				for counter in trainReader:
 					train.append(int(counter[0]))
 
-			with open("/home/avastel/prog/pfe/test.csv", 'rb') as testFile:
+			with open("./samples/test.csv", 'r') as testFile:
 				testReader = csv.reader(testFile, delimiter=',')
 				for counter in testReader:
 					test.append(int(counter[0]))
@@ -84,7 +84,7 @@ class Data():
 
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
-		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed, nbPlugins, nbFonts, os, browser, browserVersion FROM fpData WHERE counter in '+counterString)
+		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
 		res = self.cur.fetchall()
 
 		trainSet = list()
@@ -103,7 +103,7 @@ class Data():
 
 		counterString = counterString[0: len(counterString)-1]
 		counterString += ")"
-		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed, nbPlugins, nbFonts, os, browser, browserVersion FROM fpData WHERE counter in '+counterString)
+		self.cur.execute('SELECT counter, id, addressHttp, userAgentHttp, acceptHttp, hostHttp, connectionHttp, encodingHttp, languageHttp, orderHttp, pluginsJS, platformJS, cookiesJS, dntJS, timezoneJS, resolutionJS, localJS, sessionJS, IEDataJS, fontsFlash, resolutionFlash, languageFlash, platformFlash, adBlock, canvasJSHashed FROM fpData WHERE counter in '+counterString)
 		res =  self.cur.fetchall()
 		
 		testSet = list()

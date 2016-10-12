@@ -4,6 +4,7 @@ import re
 class Fingerprint():
 
 	def __init__(self, attributes):
+		parsedUa = user_agent_parser.Parse(attributes["userAgentHttp"] )
 		self.id = attributes["id"]
 		self.counter = attributes["counter"]
 		self.acceptHttp = attributes["acceptHttp"]
@@ -29,11 +30,20 @@ class Fingerprint():
 		self.canvasJsHashed = attributes["canvasJSHashed"]
 		self.localJs = attributes["localJS"]
 		self.platformJs = attributes["platformJS"]
-		self.nbPlugins = attributes["nbPlugins"]
-		self.nbFonts = attributes["nbFonts"]
-		self.os = attributes["os"]
-		self.browser = attributes["browser"]
-		self.browserVersion = attributes["browserVersion"]
+
+		try:
+			self.nbPlugins = len(self.getPlugins())
+		except:
+			self.nbPlugins = 0
+
+		self.browserFamily = parsedUa["user_agent"]["family"]
+		self.minorBrowserVersion = parsedUa["user_agent"]["minor"]
+		self.majorBrowserVersion = parsedUa["user_agent"]["major"]
+		self.os = parsedUa["os"]["family"]
+
+		self.nbFonts = len(self.fontsFlash.split("_"))
+		self.browser = parsedUa["user_agent"]["family"]
+		self.browserVersion = parsedUa["user_agent"]["major"]
 
 		self.userAgentInfo = dict()
 		if self.hasFlashActivated():
@@ -192,8 +202,10 @@ class Fingerprint():
 		else:
 			mostRecent = fp
 			oldest = self
-
-		return mostRecent.browserVersion >= oldest.browserVersion
+		try:
+			return mostRecent.browserVersion >= oldest.browserVersion
+		except:
+			return True
  
 
 	#Returns True if the plugins of the current fingerprint are a subset of another fingerprint fp or the opposite

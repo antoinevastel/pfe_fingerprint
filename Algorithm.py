@@ -1,22 +1,12 @@
 from Fingerprint import Fingerprint
-import pickle
 import csv
 import random
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-import matplotlib.pyplot as plt
-from patsy import dmatrices
-from sklearn.linear_model import LogisticRegression
-from sklearn.cross_validation import train_test_split
-from sklearn import metrics
-from sklearn.cross_validation import cross_val_score
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
-from pybrain.tools.shortcuts import buildNetwork
-from pybrain.structure import TanhLayer
-from pybrain.structure import SoftmaxLayer
-from pybrain.datasets import SupervisedDataSet
-from pybrain.supervised.trainers import BackpropTrainer
+import xgboost as xgb
 
 class Algorithm():
 
@@ -65,10 +55,10 @@ class Algorithm():
 		else:
 			result += "1,"
 
-		if fpFixed.hasSameAddressHttp(fpCompared):
-			result += "0,"
-		else:
-			result += "1,"
+		# if fpFixed.hasSameAddressHttp(fpCompared):
+		# 	result += "0,"
+		# else:
+		# 	result += "1,"
 		#Javascript attributes
 		#If one or more of the two fingerprints doesn't have javascript activated
 		if not(fpFixed.hasJsActivated()) or not(fpCompared.hasJsActivated()):
@@ -165,16 +155,16 @@ class Algorithm():
 		return result
 
 	def computeRegressionInput(self):
-		print "Start computeRegressionInput"
+		print("Start computeRegressionInput")
 		#result is the string describing the results from all the points we are going to test
 		#to compare two fingerprints
 
 		#We compare every fingerprints with all the other except itself
-		f = open("/home/avastel/prog/pfe/data/regInput.csv", 'w')
-		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+		f = open("./samples/regInput.csv", 'w')
+		f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
 		for i in range(len(self.trainSet)):
 			if i % 500 == 0:
-				print i
+				print(i)
 			fpFixed = self.trainSet[i]
 			for j in range(i+1, len(self.trainSet)):
 				fpCompared = self.trainSet[j]
@@ -184,7 +174,7 @@ class Algorithm():
 
 		for i in range(len(self.trainSet)):
 			if i % 500 ==0:
-				print i
+				print(i)
 			# compareWith = random.randint(250, 350)
 			compareWith = random.randint(50, 100)
 			fpFixed = self.trainSet[i]
@@ -197,130 +187,140 @@ class Algorithm():
 		f.close()
 
 	def predict(self):
-		print "Start Predict"
-		df = pd.read_csv("./data/regInput.csv")
-		y, X = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash ', df, return_type="dataframe")
+		print("Start Predict")
+		df = pd.read_csv("./samples/regInput.csv")
+		cols = df.columns.tolist()
+
+		y = df[cols[0]]  # variable to predict
+		X = df[cols[1:]]
 		y = np.ravel(y)
-		model = LogisticRegression()
-		# model = RandomForestClassifier(n_estimators = 11,n_jobs=3)
+		# model = LogisticRegression(n_jobs = 3)
+		model = RandomForestClassifier(n_estimators=5, n_jobs=3)
 		model = model.fit(X, y)
 
 		cpt = 0
 		for fpTest in self.testSet:
-			print cpt
+			print(cpt)
 			cpt += 1
-			f = open("/home/avastel/prog/pfe/data/regInputPred.csv", 'w')
-			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+			f = open("./samples/regInputPred.csv", 'w')
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
 			for fpTrain in self.trainSet:
 				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
-				f.write(resultComparaison+"\n")
-			
+				f.write(resultComparaison + "\n")
+
 			f.close()
-			dfPredict = pd.read_csv("./data/regInputPred.csv")
-			yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash', dfPredict, return_type="dataframe")
+			dfPredict = pd.read_csv("./samples/regInputPred.csv")
+			cols = dfPredict.columns.tolist()
+			yp = dfPredict[cols[0]]
+			Xp = dfPredict[cols[1:]]
 			predicted = model.predict_proba(Xp)
 
 			nearest = (-predicted[:, 0]).argsort()[:30]
-			# if predicted[nearest[0],0] > 0.975:
-			# 	found = False
-			# 	for i in range(0,5):
-			# 		if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
-			# 			found = True
-			# 			self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
-				
-			# 	if not(found):
-			# 		self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
-			# else:
-			# 	self.predictions[fpTest.counter] = None
 
-			if predicted[nearest[0],0] > 0.93:
+			if predicted[nearest[0], 0] > 0.93:
 				self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
 			else:
 				self.predictions[fpTest.counter] = None
 
 			res = fpTest.id == self.trainSet[nearest[0]].id
-			print "Prediction : ",fpTest.counter," ,",self.predictions[fpTest.counter], ", ", res
+			print(
+				"Prediction : " + str(fpTest.counter) + " ," + str(self.predictions[fpTest.counter]) + ", " + str(res))
 
-	def predictNN(self):
-		print "Start Predict"
-		ds = SupervisedDataSet(22, 1)
-		tf = open('./data/regInput.csv','r')
-		tf.readline()
-		for line in tf.readlines():
-		    data = [int(x) for x in line.strip().split(',') if x != '']
-		    indata =  tuple(data[1:])
-		    outdata = tuple(data[:1])
-		    ds.addSample(indata,outdata)
+	def predictXGboost(self):
+		print("Start Predict")
+		df = pd.read_csv("./samples/regInput.csv")
+		cols = df.columns.tolist()
 
-		tf.close()
+		y = df[cols[0]]  # variable to predict
+		le = LabelEncoder()
+		y = le.fit_transform(y)
 
+		X = df[cols[1:]]
+		y = np.ravel(y)
 
-		nn = buildNetwork(22, 10, 1, hiddenclass=TanhLayer, outclass=SoftmaxLayer)
-		trainer = BackpropTrainer(nn, ds)
-		print "Start training NN"
-		trainer.trainUntilConvergence()
-		print "Finished training NN"
+		train_X = X.as_matrix()
+		# train_y = y.as_matrix()
+		gbm = xgb.XGBClassifier(max_depth=5, n_estimators=250, learning_rate=0.05).fit(train_X, y)
 
 		cpt = 0
 		for fpTest in self.testSet:
-			print cpt
+			print(cpt)
 			cpt += 1
-			f = open("/home/avastel/prog/pfe/data/regInputPred.csv", 'w')
-			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,addressHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+			f = open("./samples/regInputPred.csv", 'w')
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
 			for fpTrain in self.trainSet:
 				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
-				f.write(resultComparaison+"\n")
-			
+				f.write(resultComparaison + "\n")
+
 			f.close()
+			dfPredict = pd.read_csv("./samples/regInputPred.csv")
+			cols = dfPredict.columns.tolist()
+			yp = dfPredict[cols[0]]
+			Xp = dfPredict[cols[1:]]
+			predicted = gbm.predict_proba(Xp.as_matrix())
 
-			probaMax = 0.0
-			indMax = 0
-			cpt = 1
-			tf = open('./data/regInputPred.csv','r')
-			for line in tf.readlines():
-			    data = [int(x) for x in line.strip().split(',') if x != '']
-			    indata =  tuple(data[1:])
-			    outdata = tuple(data[:1])
-			    pred = nn.activate(indata)
-			    if pred > probaMax:
-			    	probaMax = pred
-			    	indMax = cpt
+			nearest = (-predicted[:, 0]).argsort()[:30]
 
-			    cpt += 1
+			if predicted[nearest[0], 0] > 0.93:
+				self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			else:
+				self.predictions[fpTest.counter] = None
 
-			tf.close()
+			res = fpTest.id == self.trainSet[nearest[0]].id
+			print(
+				"Prediction : " + str(fpTest.counter) + " ," + str(self.predictions[fpTest.counter]) + ", " + str(res))
 
-			# dfPredict = pd.read_csv("./data/regInputPred.csv")
-			# yp, Xp = dmatrices('sameUser ~ browser + os + browserVersion + httpLanguages + acceptHttp + encodingHttp + timezoneJs+ pluginsSubset + resolutionJs + adblock + plugins + canvasJs + platformJs + dntJs + cookiesJs + localJs + flashBlockedExt + fontsSubset + fonts + platformFlash + resolutionFlash', dfPredict, return_type="dataframe")
-			# predicted = model.predict_proba(Xp)
+	def predictNN(self):
+		print("Start Predict")
+		df = pd.read_csv("./samples/regInput.csv")
+		cols = df.columns.tolist()
 
-			# nearest = (-predicted[:, 0]).argsort()[:30]
-			# if predicted[nearest[0],0] > 0.975:
-			# 	found = False
-			# 	for i in range(0,5):
-			# 		if self.trainSet[nearest[i]].addressHttp == fpTest.addressHttp and not(found):
-			# 			found = True
-			# 			self.predictions[fpTest.counter] = self.trainSet[nearest[i]].id
-				
-			# 	if not(found):
-			# 		self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
-			# else:
-			# 	self.predictions[fpTest.counter] = None
+		y = df[cols[0]]  # variable to predict
+		le = LabelEncoder()
+		y = le.fit_transform(y)
 
-			# if predicted[nearest[0],0] > 0.93:
-			# 	self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
-			# else:
-			# 	self.predictions[fpTest.counter] = None
+		X = df[cols[1:]]
+		y = np.ravel(y)
 
-			# res = fpTest.id == self.trainSet[nearest[0]].id
-			# print "Prediction : ",fpTest.counter," ,",self.predictions[fpTest.counter], ", ", res
-			print indMax, " ", probaMax
+		train_X = X.as_matrix()
+		#22,2 -> 0.763
+		#23,2 -> 0.786
+		#24,2 -> 0.783
+		clf = MLPClassifier(activation="logistic", solver='lbfgs', alpha=1e-3, hidden_layer_sizes=(5, 5, 2), random_state=1)
+		clf.fit(X, y)
+
+		cpt = 0
+		for fpTest in self.testSet:
+			print(cpt)
+			cpt += 1
+			f = open("./samples/regInputPred.csv", 'w')
+			f.write("sameUser,browser,os,browserVersion,httpLanguages,acceptHttp,encodingHttp,timezoneJs,pluginsSubset,resolutionJs,adblock,plugins,canvasJs,platformJs,dntJs,cookiesJs,localJs,flashBlockedExt,fontsSubset,fonts,platformFlash,resolutionFlash\n")
+			for fpTrain in self.trainSet:
+				resultComparaison = self.computeSimilirarity(fpTest, fpTrain)
+				f.write(resultComparaison + "\n")
+
+			f.close()
+			dfPredict = pd.read_csv("./samples/regInputPred.csv")
+			cols = dfPredict.columns.tolist()
+			yp = dfPredict[cols[0]]
+			Xp = dfPredict[cols[1:]]
+			predicted = clf.predict_proba(Xp.as_matrix())
+
+			nearest = (-predicted[:, 0]).argsort()[:30]
+			#0.93 original
+			if predicted[nearest[0], 0] > 0.90:
+				self.predictions[fpTest.counter] = self.trainSet[nearest[0]].id
+			else:
+				self.predictions[fpTest.counter] = None
+
+			res = fpTest.id == self.trainSet[nearest[0]].id
+			print("Prediction : " + str(fpTest.counter) + " ," + str(self.predictions[fpTest.counter]) + ", " + str(res))
 
 	def writeSubmission(self):
 		if len(self.predictions) == 0:
 			self.predict()
 
-		f = open("/home/avastel/prog/pfe/submission.csv", 'w')
+		f = open("./samples/submission.csv", 'w')
 		for counter in self.predictions:
 			f.write(str(counter)+","+str(self.predictions[counter])+"\n")	
 
@@ -329,7 +329,7 @@ class Algorithm():
 		for fp in self.trainSet:
 			idsTrain.add(fp.id)
 
-		with open('/home/avastel/prog/pfe/submission.csv', 'rb') as submissionFile:
+		with open('./samples/submission.csv', 'r') as submissionFile:
 			submissionReader = csv.reader(submissionFile, delimiter=',')
 			for row in submissionReader:
 				self.predictions[int(row[0])] = row[1]
@@ -347,8 +347,8 @@ class Algorithm():
 			elif self.predictions[fpTest.counter] != fpTest.id:
 				badIdError += 1.0
 
-		print "noneError : ",noneError/float(len(self.testSet))
-		print "badIdError : ",badIdError/float(len(self.testSet))
+		print("noneError : " + str(noneError / float(len(self.testSet))))
+		print("badIdError : " + str(badIdError / float(len(self.testSet))))
 		return precision / float(len(self.testSet))
 
 

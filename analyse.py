@@ -63,11 +63,11 @@ def computeProbabilityChange(cur, multId):
 		#For example example, if we consider only 4 fingerprints, only 3 changes can happen
 		#More generally if for every id we have n fingerprints, n-1 max changes can happen
 		nbFingerprints += len(fps) - 1
-		print nbFingerprints
+		print(nbFingerprints)
 
 	for attribute in probabilityChange:
 		probabilityChange[attribute] /= nbFingerprints
-		print attribute, probabilityChange[attribute]
+		print(attribute, probabilityChange[attribute])
 
 
 def computeProbabilityNbPluginsChanges(cur, multId):
@@ -89,7 +89,7 @@ def computeProbabilityNbPluginsChanges(cur, multId):
 				nbPluginsCurrent = len(re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", currentFp["pluginsJS"]))
 				nbPluginsPrevious = len(re.findall("Plugin [0-9]+: ([a-zA-Z -.]+)", previousFp["pluginsJS"]))
 
-				print nbPluginsCurrent, nbPluginsPrevious
+				print(nbPluginsCurrent, nbPluginsPrevious)
 
 				if nbPluginsCurrent > nbPluginsPrevious:
 					pIncrease += 1.0
@@ -104,13 +104,13 @@ def computeProbabilityNbPluginsChanges(cur, multId):
 		#For example example, if we consider only 4 fingerprints, only 3 changes can happen
 		#More generally if for every id we have n fingerprints, n-1 max changes can happen
 		nbFingerprints += float(len(fps)) - 1.0
-		print nbFingerprints
+		print(nbFingerprints)
 
 	pIncrease = pIncrease / nbFingerprints
 	pDecrease = pDecrease / nbFingerprints
 	pNoChange = 1 -(pIncrease + pDecrease)
 
-	print pIncrease, pDecrease, pNoChange
+	print(pIncrease, pDecrease, pNoChange)
 
 def computeProbabilityTurnOffFlash(cur, multId):
 	nbFingerprints = 0.0
@@ -159,13 +159,13 @@ def computeProbabilityTurnOffFlash(cur, multId):
 		#For example example, if we consider only 4 fingerprints, only 3 changes can happen
 		#More generally if for every id we have n fingerprints, n-1 max changes can happen
 		nbFingerprints += float(len(fps)) - 1.0
-		print nbFingerprints
+		print(nbFingerprints)
 
 	pChangePlatform = pChangePlatform / nbFingerprints
 	pChangeResolution = pChangeResolution / nbFingerprints
 	pChangeLanguage = pChangeLanguage / nbFingerprints
 
-	print pChangePlatform, pChangeResolution, pChangeLanguage
+	print(pChangePlatform, pChangeResolution, pChangeLanguage)
 	#0.204459765162 0.204459765162 0.204459765162
 
 def computeProbabilityTurnOffJs(cur, multId):
@@ -190,10 +190,10 @@ def computeProbabilityTurnOffJs(cur, multId):
 				previousFp = currentFp
 
 		nbFingerprints += float(len(fps)) - 1.0
-		print nbFingerprints
+		print(nbFingerprints)
 
 	pChange = pChange / nbFingerprints
-	print pChange
+	print(pChange)
 	# 0.0411622276029
 
 def computeChangesFonts(cur, multId):
@@ -228,13 +228,13 @@ def computeChangesFonts(cur, multId):
 				#The current fingerprint becomes the previous one
 				previousFp = currentFp
 
-		print nbFingerprints
+		print(nbFingerprints)
 
 	pIncrease = pIncrease / nbFingerprints
 	pDecrease = pDecrease / nbFingerprints
 	pNoChange = 1 -(pIncrease + pDecrease)
 
-	print pIncrease, pDecrease, pNoChange
+	print(pIncrease, pDecrease, pNoChange)
 	#0.0406020301015 0.0507525376269 0.908645432272
 
 def main():
